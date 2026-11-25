@@ -3,12 +3,14 @@
 #lien-he{margin-top:1.5rem;padding:1.3rem 0;border-top:1px solid #cdd5c6}
 #lien-he h2{font-size:1.65rem}address{display:grid;gap:.6rem;font-style:normal}address a{display:flex;align-items:center;justify-content:space-between;gap:.7rem;background:white;border:1px solid #d4dacb;border-radius:.65rem;padding:.65rem 1rem;text-decoration:none}address a:hover,address a:focus-visible{background:#edf3e9}address span{color:#285536;font-weight:600}
 #ketqua{background:white;border:1px solid #d4dacb;border-radius:18px;padding:1.25rem}#ketqua iframe{width:100%;height:19rem;border:0}#ketqua p{margin:.5rem 0}button:disabled{opacity:.65}#preview{margin-top:12px;background:white;color:#254a34}a:focus-visible,button:focus-visible{outline:3px solid #a66e29;outline-offset:2px}@media(max-width:760px){header strong{font-size:22px}main{gap:12px}#lien-he{margin-top:1.2rem}}
-header{gap:1rem;flex-wrap:wrap}header strong{line-height:1.2}nav{flex-shrink:0}</style>
+header{gap:1rem;flex-wrap:wrap}header strong{line-height:1.2}nav{flex-shrink:0}#ketqua{border-top:4px solid #315a38}#ketqua h2{font-size:1.8rem;line-height:1.25;margin-bottom:.65rem}#response-details{margin:1rem 0;font-size:.9rem}#response-details summary{cursor:pointer;text-decoration:underline}</style>
 <header><strong>Nứa Xứ Thanh - Nâng tầm sản phẩm xanh Việt</strong><nav><a href="#dat">Đặt bút</a><a href="#lien-he">Liên hệ</a></nav></header><main><section><h1>Bút nứa khắc tên</h1><p>Chọn số lượng và gửi gắm một cái tên hay lời nhắn trên thân bút nứa.</p><img src="nua-xu-thanh.jpg" width="1254" height="1254" alt="Nứa Xứ Thanh – bút bi từ nứa tự nhiên, khắc tên và logo theo yêu cầu"><p><b>28.000 ₫</b> / chiếc · Giá tạm tính</p></section><div><form id="dat" action="https://docs.google.com/forms/d/e/1FAIpQLScNlPDskiVet7pVNOD6isuzcZXzMhmR5nw1v_qB8xciv5bOxQ/formResponse?embedded=true" target="xac-nhan-don" method="post"><h2>Đặt bút của bạn</h2><label for="khac">Nội dung muốn khắc</label><input name="entry.398193592" id="khac" maxlength="80" placeholder="Ví dụ: Minh Anh"><label for="sl">Số lượng bút</label><input name="entry.1349175982" id="sl" type="number" min="1" max="999" required value="1"><label for="ten">Tên người đặt</label><input name="entry.532201233" id="ten" required maxlength="80" autocomplete="name"><label for="sdt">Số điện thoại liên hệ</label><input name="entry.729137950" id="sdt" type="tel" required pattern="[0-9+ ]{9,18}" autocomplete="tel"><label for="diachi">Địa chỉ nhận hàng</label><input id="diachi" name="entry.385237309" autocomplete="street-address" maxlength="500" required placeholder="Số nhà, đường hoặc thôn, xã/phường, tỉnh/thành"><input type="hidden" id="amount" name="entry.607862895"><p>Tiền bút <output id="tong"></output></p><button type="submit" id="send">Đặt bút</button><small>Thông tin đơn sẽ được gửi đến Nứa Xứ Thanh.</small><button type="button" id="preview">Xem phiếu trước khi gửi</button></form>
 <section id="ketqua" hidden tabindex="-1" aria-labelledby="result-heading">
-<h2 id="result-heading">Kết quả gửi đơn</h2>
+<div aria-live="polite"><h2 id="result-heading">Đang gửi đơn…</h2>
+<p id="delivery" hidden>Bút của bạn dự kiến sẽ được giao trong <strong>3–4 ngày</strong> kể từ ngày đặt hàng.</p></div>
+<details id="response-details"><summary>Xem phản hồi gửi đơn</summary>
 <iframe id="receipt" name="xac-nhan-don" title="Thông báo ghi nhận đơn hàng"></iframe>
-<p>Nếu chưa thấy xác nhận, hãy <a href="#lien-he">liên hệ người bán</a> để kiểm tra đơn.</p>
+</details>
 <button type="button" id="back">Quay lại trang đặt bút</button>
 </section>
 <section id="lien-he"><h2>Liên hệ người bán</h2><address>
@@ -29,11 +31,38 @@ function validOrder() {
 for (const id of ['ten','sdt']) {
   el(id).addEventListener('input', () => el(id).setCustomValidity(''));
 }
+let responseTimer;
+let awaitingResponse = false;
+el('receipt').addEventListener('load', () => {
+  if (!awaitingResponse || !navigator.onLine) return;
+  try {
+    if (el('receipt').contentWindow.location.href === 'about:blank') return;
+  } catch {
+    // Google serves the response from another origin.
+  }
+  awaitingResponse = false;
+  clearTimeout(responseTimer);
+  el('result-heading').textContent = 'Cảm ơn bạn đã đặt bút tại Nứa Xứ Thanh!';
+  el('delivery').hidden = false;
+});
 form.addEventListener('submit', event => {
   if (!validOrder()) {
     event.preventDefault();
     return;
   }
+  if (!navigator.onLine) {
+    event.preventDefault();
+    alert('Bạn đang ngoại tuyến. Vui lòng kết nối mạng trước khi gửi đơn.');
+    return;
+  }
+  awaitingResponse = true;
+  el('response-details').open = false;
+  el('delivery').hidden = true;
+  el('result-heading').textContent = 'Đang gửi đơn…';
+  clearTimeout(responseTimer);
+  responseTimer = setTimeout(() => {
+    el('result-heading').textContent = 'Chưa có phản hồi. Vui lòng liên hệ người bán để kiểm tra đơn.';
+  }, 20000);
   el('amount').value = 28000 * Number(el('sl').value);
   el('send').disabled = true;
   el('send').textContent = 'Đang gửi đơn…';
@@ -42,6 +71,8 @@ form.addEventListener('submit', event => {
   form.hidden = true;
 });
 function showOrderForm() {
+  clearTimeout(responseTimer);
+  awaitingResponse = false;
   form.hidden = false;
   el('ketqua').hidden = true;
   el('send').disabled = false;
